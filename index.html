@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollGuard</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow-x:hidden;}
+
+/* ── DESIGN TOKENS ── */
+:root{
+  --ink:#0e0e12;
+  --ink2:#1a1a22;
+  --ink3:#23232f;
+  --ink4:#2e2e3e;
+  --smoke:#f5f4f0;
+  --smoke2:#eceae4;
+  --smoke3:#dddad2;
+  --text:#0e0e12;
+  --text-inv:#f5f4f0;
+  --muted:#8a8898;
+  --muted2:#b0aebf;
+  --ig-a:#f77737;
+  --ig-b:#c13584;
+  --ig-c:#833ab4;
+  --yt-a:#ff0000;
+  --yt-b:#cc0000;
+  --acc:#1a1a22;
+  --success:#1db954;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --r:12px;
+  --r2:18px;
+  --r3:26px;
+
+  /* gradients */
+  --ig-grad:linear-gradient(135deg,#f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+  --yt-grad:linear-gradient(135deg,#ff4e4e 0%,#cc0000 60%,#7b0000 100%);
+  --hero-grad:linear-gradient(160deg,#0e0e12 0%,#1a0a2e 50%,#0e0e12 100%);
+}
+
+/* ── BODY ── */
+body{
+  font-family:'Manrope',sans-serif;
+  background:var(--smoke);
+  color:var(--text);
+  min-height:100vh;
+}
+
+/* ── SCREEN SYSTEM ── */
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+@keyframes screenIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.screen.active{animation:screenIn .35s ease;}
+
+/* ── SCROLLABLE WRAP ── */
+.wrap{width:100%;max-width:440px;margin:0 auto;padding:0 1.25rem 6rem;flex:1;}
+
+/* ── AUTH SCREEN ── */
+#authScreen{
+  background:var(--hero-grad);
+  align-items:center;
+  justify-content:flex-start;
+  position:relative;
+  overflow:hidden;
+}
+
+/* animated orbs */
+.orb{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;}
+.orb1{width:380px;height:380px;background:radial-gradient(circle,rgba(188,24,136,.28),transparent 70%);top:-80px;right:-80px;animation:orb1 9s ease-in-out infinite alternate;}
+.orb2{width:320px;height:320px;background:radial-gradient(circle,rgba(255,0,0,.18),transparent 70%);bottom:60px;left:-60px;animation:orb2 11s ease-in-out infinite alternate;}
+.orb3{width:220px;height:220px;background:radial-gradient(circle,rgba(240,148,51,.2),transparent 70%);top:40%;right:10%;animation:orb3 7s ease-in-out infinite alternate;}
+@keyframes orb1{to{transform:translate(-30px,40px) scale(1.1);}}
+@keyframes orb2{to{transform:translate(20px,-30px) scale(.9);}}
+@keyframes orb3{to{transform:translate(-15px,20px) scale(1.15);}}
+
+/* noise overlay */
+#authScreen::after{
+  content:'';position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+  opacity:.4;pointer-events:none;z-index:0;
+}
+
+.auth-inner{
+  position:relative;z-index:1;
+  width:100%;max-width:400px;
+  margin:0 auto;
+  padding:3.5rem 1.5rem 3rem;
+  display:flex;flex-direction:column;gap:0;
+}
+
+/* logo */
+.logo-mark{
+  display:inline-flex;align-items:center;gap:9px;
+  margin-bottom:2.5rem;
+}
+.logo-hex{
+  width:36px;height:36px;background:var(--smoke);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-hex svg{width:20px;height:20px;}
+.logo-word{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;color:var(--smoke);letter-spacing:-.01em;}
+
+.auth-headline{
+  font-family:'Fraunces',serif;
+  font-size:clamp(2.6rem,9vw,3.8rem);
+  font-weight:900;
+  line-height:1.0;
+  color:var(--smoke);
+  margin-bottom:1rem;
+  letter-spacing:-.03em;
+}
+.auth-headline em{font-style:normal;background:var(--ig-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+.auth-sub{color:rgba(245,244,240,.5);font-size:.95rem;line-height:1.65;margin-bottom:2.5rem;font-weight:400;}
+
+/* platform chips on auth */
+.plat-chips{display:flex;gap:8px;margin-bottom:2.5rem;flex-wrap:wrap;}
+.plat-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 13px;border-radius:100px;
+  font-size:12px;font-weight:600;letter-spacing:.01em;
+}
+.chip-ig{background:var(--ig-grad);color:#fff;}
+.chip-yt{background:var(--yt-grad);color:#fff;}
+
+/* ── GLASS CARD ── */
+.glass{
+  background:rgba(245,244,240,.07);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(245,244,240,.12);
+  border-radius:var(--r3);
+  padding:1.75rem;
+}
+
+/* tabs */
+.auth-tabs{display:flex;gap:0;background:rgba(255,255,255,.06);border-radius:10px;padding:3px;margin-bottom:1.5rem;}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:rgba(245,244,240,.4);font-family:'Manrope',sans-serif;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;transition:all .2s;}
+.auth-tab.active{background:rgba(245,244,240,.12);color:var(--smoke);}
+
+/* fields */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:.9rem;}
+.field label{font-size:12px;font-weight:600;color:rgba(245,244,240,.5);letter-spacing:.05em;text-transform:uppercase;}
+.field input{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(245,244,240,.1);
+  border-radius:10px;padding:13px 15px;
+  color:var(--smoke);font-family:'Manrope',sans-serif;font-size:15px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.field input::placeholder{color:rgba(245,244,240,.25);}
+.field input:focus{border-color:rgba(245,244,240,.35);box-shadow:0 0 0 3px rgba(245,244,240,.06);}
+.field input.err{border-color:var(--danger)!important;}
+.err-hint{font-size:11px;color:#fc8585;display:none;}
+.err-hint.show{display:block;}
+
+/* strength bar */
+.strength-bar{height:3px;background:rgba(255,255,255,.08);border-radius:10px;margin:-4px 0 .75rem;overflow:hidden;}
+.strength-fill{height:100%;border-radius:10px;width:0%;transition:width .3s,background .3s;}
+
+/* buttons */
+.btn-auth{
+  width:100%;padding:14px;border:none;border-radius:12px;
+  font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.01em;
+  background:var(--smoke);color:var(--ink);
+}
+.btn-auth:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.btn-auth:active{transform:scale(.98);}
+
+.auth-note{text-align:center;font-size:12px;color:rgba(245,244,240,.3);margin-top:1rem;line-height:1.6;}
+
+/* ── MAIN SCREENS (LIGHT) ── */
+.topbar{
+  background:var(--smoke);
+  border-bottom:1px solid var(--smoke3);
+  padding:1.2rem 1.5rem 1rem;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:40;
+}
+.topbar-title{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;letter-spacing:-.01em;color:var(--text);}
+.topbar-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--ig-grad);display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-size:.95rem;font-weight:700;color:#fff;
+  cursor:pointer;border:none;
+  transition:transform .2s;
+}
+.topbar-avatar:hover{transform:scale(1.08);}
+
+/* bottom nav */
+.bnav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--smoke);border-top:1px solid var(--smoke3);
+  display:flex;justify-content:space-around;
+  padding:10px 0 16px;z-index:50;
+}
+.bnav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  font-family:'Manrope',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;padding:4px 18px;
+  border-radius:10px;transition:color .2s;
+}
+.bnav-btn.active{color:var(--text);}
+.bnav-icon{font-size:19px;line-height:1;}
+
+/* ── CARDS ── */
+.card{
+  background:#fff;border:1px solid var(--smoke3);
+  border-radius:var(--r3);padding:1.5rem;
+  margin-bottom:.875rem;
+}
+.card-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.9rem;}
+
+/* ── PLATFORM PAIR ── */
+.plat-pair{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.875rem;}
+.plat-tile{
+  border-radius:var(--r2);padding:1.1rem;position:relative;overflow:hidden;
+  cursor:pointer;border:2px solid transparent;transition:all .25s;
+  background:var(--smoke2);
+}
+.plat-tile.ig-tile{background:linear-gradient(135deg,rgba(240,148,51,.08),rgba(188,24,136,.08));}
+.plat-tile.yt-tile{background:linear-gradient(135deg,rgba(255,78,78,.08),rgba(139,0,0,.06));}
+.plat-tile.linked.ig-tile{border-color:var(--ig-b);}
+.plat-tile.linked.yt-tile{border-color:var(--yt-b);}
+.plat-tile.selected{box-shadow:0 0 0 3px rgba(14,14,18,.15);}
+.tile-icon{font-size:1.75rem;display:block;margin-bottom:.4rem;}
+.tile-name{font-size:13px;font-weight:700;color:var(--text);}
+.tile-status{font-size:11px;color:var(--muted);margin-top:2px;}
+.tile-status.linked{color:var(--success);}
+.tile-check{
+  position:absolute;top:8px;right:8px;
+  width:18px;height:18px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;
+  font-size:10px;color:#fff;
+}
+.ig-tile .tile-check{background:var(--ig-grad);}
+.yt-tile .tile-check{background:var(--yt-grad);}
+.plat-tile.linked .tile-check{display:flex;}
+
+/* ── RING TIMER ── */
+.ring-container{display:flex;justify-content:center;align-items:center;position:relative;margin:1.25rem 0;}
+.ring-svg{display:block;filter:drop-shadow(0 0 18px rgba(14,14,18,.06));}
+.ring-bg-c{fill:none;stroke:var(--smoke2);stroke-width:11;}
+.ring-prog{
+  fill:none;stroke-width:11;stroke-linecap:round;
+  stroke-dasharray:534.07;
+  transition:stroke-dashoffset 1s linear,stroke .5s;
+  transform:rotate(-90deg);transform-origin:50% 50%;
+}
+.ring-mid{position:absolute;text-align:center;pointer-events:none;}
+.ring-big{font-family:'Fraunces',serif;font-size:2.75rem;font-weight:900;color:var(--text);line-height:1;letter-spacing:-.03em;}
+.ring-small{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:5px;}
+
+/* ── SLIDER ── */
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:3px;
+  background:var(--smoke3);border-radius:10px;outline:none;cursor:pointer;
+  transition:background .2s;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--ink);cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  border:3px solid var(--smoke);
+  transition:transform .2s,box-shadow .2s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 4px 14px rgba(0,0,0,.25);}
+
+/* ── CONTROL BUTTONS ── */
+.ctrl-grid{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-top:.2rem;}
+.btn-main{
+  border:none;border-radius:var(--r);padding:13px;
+  font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.01em;
+}
+.btn-start{background:var(--ink);color:var(--smoke);grid-column:span 2;}
+.btn-start:hover{background:var(--ink2);transform:translateY(-1px);}
+.btn-start:active{transform:scale(.98);}
+.btn-sec{background:var(--smoke2);color:var(--text);border:1px solid var(--smoke3);}
+.btn-sec:hover{background:var(--smoke3);}
+.btn-main:disabled{opacity:.3;pointer-events:none;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin-bottom:.875rem;}
+.stat-tile{background:#fff;border:1px solid var(--smoke3);border-radius:var(--r2);padding:1rem;text-align:center;}
+.stat-num{font-family:'Fraunces',serif;font-size:1.55rem;font-weight:900;color:var(--text);line-height:1;}
+.stat-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+
+/* ── LOG ── */
+.log-entry{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--smoke2);
+  border-radius:11px;margin-bottom:6px;
+  animation:logSlide .3s ease;
+}
+@keyframes logSlide{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+.log-pip{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.log-body{flex:1;font-size:13px;color:var(--text);}
+.log-time{font-size:11px;color:var(--muted);font-weight:500;}
+
+/* ── CONNECTED LIST ── */
+.conn-row{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 0;border-bottom:1px solid var(--smoke3);
+}
+.conn-row:last-child{border-bottom:none;}
+.conn-ico{
+  width:38px;height:38px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  flex-shrink:0;
+}
+.conn-ico.ig{background:var(--ig-grad);}
+.conn-ico.yt{background:var(--yt-grad);}
+.conn-detail{flex:1;}
+.conn-name{font-size:14px;font-weight:600;color:var(--text);}
+.conn-email{font-size:11px;color:var(--muted);margin-top:1px;}
+.badge-on{
+  font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;
+  background:rgba(29,185,84,.1);color:var(--success);
+}
+.badge-off{background:var(--smoke2);color:var(--muted);font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;}
+
+/* ── SETTINGS TOGGLE ── */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--smoke3);}
+.tog-row:last-child{border-bottom:none;}
+.tog-title{font-size:14px;font-weight:600;color:var(--text);}
+.tog-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.tog{width:42px;height:23px;background:var(--smoke3);border-radius:100px;position:relative;cursor:pointer;border:1px solid var(--smoke3);transition:background .2s;}
+.tog.on{background:var(--ink);}
+.tog::after{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.tog.on::after{transform:translateX(19px);}
+
+/* ── PROFILE ── */
+.avatar-lg{
+  width:80px;height:80px;border-radius:50%;
+  background:var(--ig-grad);display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-size:2rem;font-weight:900;color:#fff;
+  margin:0 auto 1rem;
+}
+.achievement{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:100px;font-size:12px;font-weight:600;
+  margin:3px;transition:all .2s;
+}
+.ach-locked{background:var(--smoke2);color:var(--muted);opacity:.55;}
+.ach-unlocked{background:var(--ink);color:var(--smoke);}
+
+/* ── ONBOARDING ── */
+#onboardScreen{background:var(--smoke);align-items:center;justify-content:flex-start;}
+.ob-wrap{width:100%;max-width:420px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
+.ob-stepper{display:flex;align-items:center;gap:6px;margin-bottom:2rem;}
+.ob-step{height:4px;border-radius:10px;background:var(--smoke3);flex:1;transition:background .3s;}
+.ob-step.done{background:var(--ink);}
+.ob-step.active{background:var(--ink2);flex:1.5;}
+
+/* ── LINK MODAL ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(14,14,18,.6);backdrop-filter:blur(16px);
+  z-index:200;align-items:flex-end;justify-content:center;
+  padding-bottom:0;
+}
+.modal-bg.show{display:flex;}
+.modal-sheet{
+  background:var(--smoke);border-radius:var(--r3) var(--r3) 0 0;
+  padding:1.5rem 1.5rem 2.5rem;width:100%;max-width:480px;
+  animation:sheetUp .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.sheet-handle{width:36px;height:4px;background:var(--smoke3);border-radius:10px;margin:0 auto 1.5rem;}
+.sheet-icon{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:1rem;}
+.sheet-icon.ig{background:var(--ig-grad);}
+.sheet-icon.yt{background:var(--yt-grad);}
+.sheet-title{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:900;color:var(--text);letter-spacing:-.02em;margin-bottom:.4rem;}
+.sheet-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1.25rem;}
+/* sheet fields */
+.sh-field{display:flex;flex-direction:column;gap:5px;margin-bottom:.9rem;}
+.sh-field label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+.sh-field input{
+  background:#fff;border:1.5px solid var(--smoke3);border-radius:11px;
+  padding:13px 15px;color:var(--text);font-family:'Manrope',sans-serif;
+  font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.sh-field input:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(14,14,18,.06);}
+.sh-field input.err{border-color:var(--danger);}
+.match-ok{display:none;background:rgba(29,185,84,.08);border:1px solid rgba(29,185,84,.2);border-radius:10px;padding:9px 13px;font-size:13px;color:var(--success);margin-bottom:.9rem;}
+.match-ok.show{display:block;}
+.match-no{display:none;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);border-radius:10px;padding:9px 13px;font-size:13px;color:var(--danger);margin-bottom:.9rem;}
+.match-no.show{display:block;}
+.sheet-btns{display:grid;grid-template-columns:1fr 2fr;gap:.65rem;}
+.btn-sheet-cancel{border:1.5px solid var(--smoke3);background:transparent;color:var(--muted);border-radius:11px;padding:13px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-sheet-cancel:hover{background:var(--smoke2);}
+.btn-sheet-confirm{border:none;background:var(--ink);color:var(--smoke);border-radius:11px;padding:13px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-sheet-confirm:hover{background:var(--ink2);}
+
+/* ── IN-APP OVERLAY (mid session) ── */
+.overlay-modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(14,14,18,.75);backdrop-filter:blur(20px);
+  z-index:300;align-items:center;justify-content:center;padding:1.5rem;
+}
+.overlay-modal.show{display:flex;}
+.overlay-card{
+  background:var(--smoke);border-radius:var(--r3);
+  padding:2.5rem 2rem;max-width:360px;width:100%;
+  text-align:center;
+  animation:cardPop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes cardPop{from{opacity:0;transform:scale(.82)translateY(20px);}to{opacity:1;transform:scale(1)translateY(0);}}
+.ov-icon{font-size:3.8rem;display:block;margin-bottom:1rem;animation:iconBounce .6s cubic-bezier(.34,1.56,.64,1) .2s both;}
+@keyframes iconBounce{from{transform:scale(.5);}to{transform:scale(1);}}
+.ov-title{font-family:'Fraunces',serif;font-size:1.75rem;font-weight:900;color:var(--text);letter-spacing:-.02em;margin-bottom:.5rem;}
+.ov-sub{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:1.25rem;}
+.ov-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--ink);color:var(--smoke);
+  border-radius:100px;padding:7px 16px;font-size:13px;font-weight:600;
+  margin-bottom:1.5rem;
+}
+.btn-ov-primary{width:100%;padding:14px;border:none;border-radius:12px;background:var(--ink);color:var(--smoke);font-family:'Manrope',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:.65rem;transition:all .2s;}
+.btn-ov-primary:hover{background:var(--ink2);}
+.btn-ov-ghost{width:100%;padding:12px;border:1.5px solid var(--smoke3);border-radius:12px;background:transparent;color:var(--muted);font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-ov-ghost:hover{background:var(--smoke2);color:var(--text);}
+
+/* ── SOUND WAVE ANIMATION (plays during alert) ── */
+.sound-wave{display:flex;align-items:center;gap:3px;height:20px;margin:0 auto .75rem;width:fit-content;}
+.wave-bar{width:4px;border-radius:10px;background:var(--ig-grad);animation:wavePulse 1s ease infinite;}
+.wave-bar:nth-child(1){height:8px;animation-delay:0s;}
+.wave-bar:nth-child(2){height:14px;animation-delay:.15s;}
+.wave-bar:nth-child(3){height:20px;animation-delay:.3s;}
+.wave-bar:nth-child(4){height:14px;animation-delay:.45s;}
+.wave-bar:nth-child(5){height:8px;animation-delay:.6s;}
+@keyframes wavePulse{0%,100%{transform:scaleY(.5);opacity:.5;}50%{transform:scaleY(1);opacity:1;}}
+.sound-wave.yt-wave .wave-bar{background:var(--yt-grad);}
+.sound-wave.done-wave .wave-bar{background:linear-gradient(to top,#1db954,#17a349);}
+
+/* ── LIVE TICKER (shows which app is active) ── */
+.live-ticker{
+  display:none;align-items:center;gap:8px;
+  background:var(--ink);border-radius:100px;padding:6px 14px;
+  font-size:12px;color:var(--smoke);font-weight:600;
+}
+.live-ticker.show{display:inline-flex;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#1db954;box-shadow:0 0 6px #1db954;animation:liveBlink 1.4s ease infinite;}
+@keyframes liveBlink{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* ── URGENT PULSE (last 60s) ── */
+@keyframes urgentRing{0%,100%{opacity:1;}50%{opacity:.4;}}
+.ring-container.urgent .ring-svg{animation:urgentRing 1s ease infinite;}
+
+/* ── PER-APP LIMIT SLIDER ROW ── */
+.app-limit-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--smoke3);}
+.app-limit-row:last-child{border-bottom:none;}
+.app-lim-ico{font-size:1.3rem;}
+.app-lim-name{width:80px;font-size:13px;font-weight:600;color:var(--text);}
+.app-lim-val{font-size:13px;font-weight:700;color:var(--text);min-width:48px;text-align:right;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:380px){.ring-big{font-size:2.2rem;}.plat-pair{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SCREEN: AUTH
+══════════════════════════════════ -->
+<div class="screen active" id="authScreen">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <div class="auth-inner">
+    <div class="logo-mark">
+      <div class="logo-hex">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#0e0e12" stroke-width="2"/><path d="M7 10h6M10 7v6" stroke="#0e0e12" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <span class="logo-word">ScrollGuard</span>
+    </div>
+
+    <h1 class="auth-headline">Stop the<br><em>scroll spiral.</em></h1>
+    <p class="auth-sub">Set a timer. Get notified mid-scroll.<br>Reclaim hours you didn't know you were losing.</p>
+
+    <div class="plat-chips">
+      <span class="plat-chip chip-ig">📸 Instagram</span>
+      <span class="plat-chip chip-yt">▶️ YouTube</span>
+    </div>
+
+    <div class="glass">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="authTab('login')">Sign In</button>
+        <button class="auth-tab" onclick="authTab('signup')">Create Account</button>
+      </div>
+
+      <!-- Login -->
+      <div id="loginForm">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="li-email" placeholder="you@example.com">
+          <span class="err-hint" id="li-email-err">Enter a valid email address</span>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="li-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+          <span class="err-hint" id="li-pass-err">Password must be 6+ characters</span>
+        </div>
+        <button class="btn-auth" style="margin-top:.5rem;" onclick="doLogin()">Sign In →</button>
+        <p class="auth-note">Demo: any valid email + 6+ char password</p>
+      </div>
+
+      <!-- Signup -->
+      <div id="signupForm" style="display:none;">
+        <div class="field">
+          <label>Your name</label>
+          <input type="text" id="su-name" placeholder="Alex Sharma">
+          <span class="err-hint" id="su-name-err">Name is required</span>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="su-email" placeholder="you@example.com">
+          <span class="err-hint" id="su-email-err">Enter a valid email address</span>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="su-pass" placeholder="Min. 6 characters" oninput="strengthCheck(this.value)" onkeydown="if(event.key==='Enter')doSignup()">
+          <span class="err-hint" id="su-pass-err">Password must be 6+ characters</span>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+        <button class="btn-auth" onclick="doSignup()">Create Account →</button>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:12px;color:rgba(245,244,240,.25);margin-top:1.25rem;">
+      🔒 Your data stays on-device · No social content is read
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: ONBOARD
+══════════════════════════════════ -->
+<div class="screen" id="onboardScreen">
+  <div class="ob-wrap">
+
+    <div class="ob-stepper" id="ob-stepper">
+      <div class="ob-step active" id="obs-1"></div>
+      <div class="ob-step" id="obs-2"></div>
+      <div class="ob-step" id="obs-3"></div>
+    </div>
+
+    <!-- Step 1: Connect -->
+    <div id="ob-step1">
+      <p style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;">Step 1 of 3</p>
+      <h2 style="font-family:'Fraunces',serif;font-size:2rem;font-weight:900;letter-spacing:-.02em;margin-bottom:.4rem;">Connect your apps</h2>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;">Link Instagram & YouTube using the same email as your ScrollGuard account for instant verification.</p>
+
+      <div class="plat-pair">
+        <div class="plat-tile ig-tile" id="pt-ig" onclick="openLink('ig')">
+          <div class="tile-check">✓</div>
+          <span class="tile-icon">📸</span>
+          <div class="tile-name">Instagram</div>
+          <div class="tile-status" id="ts-ig">Tap to connect</div>
+        </div>
+        <div class="plat-tile yt-tile" id="pt-yt" onclick="openLink('yt')">
+          <div class="tile-check">✓</div>
+          <span class="tile-icon">▶️</span>
+          <div class="tile-name">YouTube</div>
+          <div class="tile-status" id="ts-yt">Tap to connect</div>
+        </div>
+      </div>
+
+      <p style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:1.25rem;">Connect at least one to continue</p>
+      <button class="btn-main btn-start" id="ob1-next" onclick="ob1Next()" disabled style="border-radius:var(--r);">Continue →</button>
+    </div>
+
+    <!-- Step 2: Limits -->
+    <div id="ob-step2" style="display:none;">
+      <p style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;">Step 2 of 3</p>
+      <h2 style="font-family:'Fraunces',serif;font-size:2rem;font-weight:900;letter-spacing:-.02em;margin-bottom:.4rem;">Set your limit</h2>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;">How many minutes before we interrupt your scrolling?</p>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+          <span style="font-size:14px;font-weight:600;">Session duration</span>
+          <span style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:900;" id="ob2-dur-val">30 min</span>
+        </div>
+        <input type="range" min="5" max="120" step="5" value="30" oninput="st.defaultDur=+this.value;document.getElementById('ob2-dur-val').textContent=this.value+' min';">
+      </div>
+
+      <div class="card" style="margin-bottom:1.25rem;">
+        <p class="card-label">Notifications (selected)</p>
+        <div class="tog-row">
+          <div><div class="tog-title">In-app overlay popup</div><div class="tog-sub">Visual interruption at 50% and end</div></div>
+          <div class="tog on" style="pointer-events:none;"></div>
+        </div>
+        <div class="tog-row">
+          <div><div class="tog-title">Sound alerts</div><div class="tog-sub">Audio chime at key moments</div></div>
+          <div class="tog on" style="pointer-events:none;"></div>
+        </div>
+        <div class="tog-row" style="border-bottom:none;">
+          <div><div class="tog-title">5-minute warning</div><div class="tog-sub">Early heads-up before time runs out</div></div>
+          <div class="tog on" id="tgl-5min" onclick="toggleS('5min')"></div>
+        </div>
+      </div>
+      <button class="btn-main btn-start" onclick="ob2Next()" style="border-radius:var(--r);">Continue →</button>
+    </div>
+
+    <!-- Step 3: Ready -->
+    <div id="ob-step3" style="display:none;text-align:center;">
+      <p style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;">Step 3 of 3</p>
+      <div style="font-size:4rem;margin:1.5rem 0 1rem;">🎯</div>
+      <h2 style="font-family:'Fraunces',serif;font-size:2rem;font-weight:900;letter-spacing:-.02em;margin-bottom:.5rem;">You're all set</h2>
+      <p style="font-size:.9rem;color:var(--muted);line-height:1.65;margin-bottom:1.5rem;">
+        ScrollGuard is ready to monitor your<br>
+        <strong id="ob3-platforms" style="color:var(--text);"></strong> usage in real time.
+      </p>
+      <div class="card" style="text-align:left;margin-bottom:1.5rem;">
+        <p class="card-label">What happens during a session</p>
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <div style="display:flex;gap:9px;font-size:13px;"><span>⏱</span><span>Timer starts when you tap <b>Start Session</b></span></div>
+          <div style="display:flex;gap:9px;font-size:13px;"><span>🔔</span><span>Sound + overlay at <b>halfway point</b></span></div>
+          <div style="display:flex;gap:9px;font-size:13px;"><span>⚠️</span><span>Sound + overlay at <b>5 min remaining</b></span></div>
+          <div style="display:flex;gap:9px;font-size:13px;"><span>🛑</span><span>Final overlay + sound when <b>time's up</b></span></div>
+        </div>
+      </div>
+      <button class="btn-main btn-start" onclick="goApp()" style="border-radius:var(--r);">Start Using ScrollGuard →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: TIMER (HOME)
+══════════════════════════════════ -->
+<div class="screen" id="timerScreen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">ScrollGuard</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:500;" id="greet-line">Good morning</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="live-ticker" id="live-ticker"><div class="live-dot"></div><span id="live-txt">Live</span></div>
+      <button class="topbar-avatar" id="top-avatar" onclick="navTo('profileScreen',3)">A</button>
+    </div>
+  </div>
+
+  <div class="wrap" style="padding-top:1.25rem;">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-tile"><div class="stat-num" id="s-sess">0</div><div class="stat-lbl">Sessions</div></div>
+      <div class="stat-tile"><div class="stat-num" id="s-time">0m</div><div class="stat-lbl">Tracked</div></div>
+      <div class="stat-tile"><div class="stat-num" id="s-streak">🔥0</div><div class="stat-lbl">Streak</div></div>
+    </div>
+
+    <!-- Timer Card -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+        <p class="card-label" style="margin-bottom:0;">Active session</p>
+        <div id="active-pills" style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;"></div>
+      </div>
+
+      <!-- Ring -->
+      <div class="ring-container" id="ringWrap">
+        <svg class="ring-svg" width="220" height="220" viewBox="0 0 220 220">
+          <defs>
+            <linearGradient id="ig-ring-g" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f09433"/><stop offset="50%" stop-color="#dc2743"/><stop offset="100%" stop-color="#bc1888"/>
+            </linearGradient>
+            <linearGradient id="yt-ring-g" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#cc0000"/>
+            </linearGradient>
+            <linearGradient id="both-ring-g" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f09433"/><stop offset="50%" stop-color="#dc2743"/><stop offset="100%" stop-color="#cc0000"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg-c" cx="110" cy="110" r="85"/>
+          <circle class="ring-prog" id="ring-prog" cx="110" cy="110" r="85" stroke="url(#ig-ring-g)"/>
+        </svg>
+        <div class="ring-mid">
+          <div class="ring-big" id="ring-time">30:00</div>
+          <div class="ring-small" id="ring-sub">ready</div>
+        </div>
+      </div>
+
+      <!-- Duration slider -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.1rem;">
+        <span style="font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;">LIMIT</span>
+        <input type="range" id="dur-slider" min="5" max="120" step="5" value="30" oninput="setDur(+this.value)">
+        <span style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:900;white-space:nowrap;min-width:52px;text-align:right;" id="dur-val">30 min</span>
+      </div>
+
+      <!-- Platform toggles -->
+      <p class="card-label">Tracking</p>
+      <div style="display:flex;gap:.5rem;margin-bottom:1.1rem;" id="track-pills"></div>
+
+      <!-- Controls -->
+      <div class="ctrl-grid">
+        <button class="btn-main btn-start" id="start-btn" onclick="startTimer()">▶ Start Session</button>
+        <button class="btn-main btn-sec" id="pause-btn" onclick="pauseTimer()" disabled>⏸ Pause</button>
+        <button class="btn-main btn-sec" id="reset-btn" onclick="resetTimer()" disabled>↺ Reset</button>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+        <p class="card-label" style="margin-bottom:0;">Session History</p>
+        <button onclick="clearLog()" style="font-size:12px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'Manrope',sans-serif;">Clear</button>
+      </div>
+      <div id="log-list"><p style="font-size:13px;color:var(--muted2);text-align:center;padding:.75rem 0;" id="log-empty">No sessions yet — start your first one!</p></div>
+    </div>
+  </div>
+
+  <nav class="bnav">
+    <button class="bnav-btn active" onclick="navTo('timerScreen',0)"><span class="bnav-icon">⏱</span>Timer</button>
+    <button class="bnav-btn" onclick="navTo('appsScreen',1)"><span class="bnav-icon">📱</span>My Apps</button>
+    <button class="bnav-btn" onclick="navTo('settingsScreen',2)"><span class="bnav-icon">⚙️</span>Settings</button>
+    <button class="bnav-btn" onclick="navTo('profileScreen',3)"><span class="bnav-icon">👤</span>Profile</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: MY APPS
+══════════════════════════════════ -->
+<div class="screen" id="appsScreen">
+  <div class="topbar"><div class="topbar-title">My Apps</div><button class="topbar-avatar" id="apps-avatar" onclick="navTo('profileScreen',3)">A</button></div>
+  <div class="wrap" style="padding-top:1.25rem;">
+
+    <div class="card">
+      <p class="card-label">Connected via <span id="apps-email" style="color:var(--text);text-transform:none;letter-spacing:0;"></span></p>
+      <div id="conn-list"></div>
+    </div>
+
+    <button onclick="openLink(nextUnlinked())" style="width:100%;padding:13px;border:1.5px dashed var(--smoke3);border-radius:var(--r2);background:transparent;font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-bottom:.875rem;transition:all .2s;" onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)';" onmouseout="this.style.borderColor='var(--smoke3)';this.style.color='var(--muted)';">+ Connect Another Account</button>
+
+    <div class="card">
+      <p class="card-label">Per-App Time Limits</p>
+      <div id="per-app-limits"></div>
+    </div>
+
+  </div>
+  <nav class="bnav">
+    <button class="bnav-btn" onclick="navTo('timerScreen',0)"><span class="bnav-icon">⏱</span>Timer</button>
+    <button class="bnav-btn active" onclick="navTo('appsScreen',1)"><span class="bnav-icon">📱</span>My Apps</button>
+    <button class="bnav-btn" onclick="navTo('settingsScreen',2)"><span class="bnav-icon">⚙️</span>Settings</button>
+    <button class="bnav-btn" onclick="navTo('profileScreen',3)"><span class="bnav-icon">👤</span>Profile</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: SETTINGS
+══════════════════════════════════ -->
+<div class="screen" id="settingsScreen">
+  <div class="topbar"><div class="topbar-title">Settings</div><button class="topbar-avatar" id="set-avatar" onclick="navTo('profileScreen',3)">A</button></div>
+  <div class="wrap" style="padding-top:1.25rem;">
+
+    <div class="card">
+      <p class="card-label">Notification Methods</p>
+      <div class="tog-row">
+        <div><div class="tog-title">In-app overlay popup</div><div class="tog-sub">Full-screen interruption overlay</div></div>
+        <div class="tog on" style="pointer-events:none;" title="Always on"></div>
+      </div>
+      <div class="tog-row" style="border-bottom:none;">
+        <div><div class="tog-title">Sound alerts</div><div class="tog-sub">Chime at halfway, 5 min & end</div></div>
+        <div class="tog on" style="pointer-events:none;" title="Always on"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label">Behaviour</p>
+      <div class="tog-row">
+        <div><div class="tog-title">5-minute warning</div><div class="tog-sub">Early alert before session ends</div></div>
+        <div class="tog on" id="s-tgl-5min" onclick="toggleS2('5min')"></div>
+      </div>
+      <div class="tog-row">
+        <div><div class="tog-title">Halfway check-in</div><div class="tog-sub">Mindfulness popup at 50%</div></div>
+        <div class="tog on" id="s-tgl-half" onclick="toggleS2('half')"></div>
+      </div>
+      <div class="tog-row" style="border-bottom:none;">
+        <div><div class="tog-title">Auto-restart after session</div><div class="tog-sub">Automatically begin next timer</div></div>
+        <div class="tog" id="s-tgl-auto" onclick="toggleS2('auto')"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label">Account</p>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:1rem;" id="set-email-disp"></p>
+      <button onclick="doLogout()" style="width:100%;padding:13px;border:1.5px solid rgba(239,68,68,.25);border-radius:var(--r);background:rgba(239,68,68,.04);color:var(--danger);font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(239,68,68,.08)';" onmouseout="this.style.background='rgba(239,68,68,.04)';">Sign Out</button>
+    </div>
+
+  </div>
+  <nav class="bnav">
+    <button class="bnav-btn" onclick="navTo('timerScreen',0)"><span class="bnav-icon">⏱</span>Timer</button>
+    <button class="bnav-btn" onclick="navTo('appsScreen',1)"><span class="bnav-icon">📱</span>My Apps</button>
+    <button class="bnav-btn active" onclick="navTo('settingsScreen',2)"><span class="bnav-icon">⚙️</span>Settings</button>
+    <button class="bnav-btn" onclick="navTo('profileScreen',3)"><span class="bnav-icon">👤</span>Profile</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: PROFILE
+══════════════════════════════════ -->
+<div class="screen" id="profileScreen">
+  <div class="topbar"><div class="topbar-title">Profile</div></div>
+  <div class="wrap" style="padding-top:1.5rem;">
+    <div style="text-align:center;margin-bottom:1.75rem;">
+      <div class="avatar-lg" id="profile-avatar">A</div>
+      <h2 style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;letter-spacing:-.02em;" id="profile-name">User</h2>
+      <p style="font-size:.9rem;color:var(--muted);" id="profile-email"></p>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:1rem;">
+      <div class="stat-tile"><div class="stat-num" id="p-sess">0</div><div class="stat-lbl">Sessions</div></div>
+      <div class="stat-tile"><div class="stat-num" id="p-time">0m</div><div class="stat-lbl">Saved</div></div>
+      <div class="stat-tile"><div class="stat-num" id="p-best">🔥0</div><div class="stat-lbl">Best Streak</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:.875rem;">
+      <p class="card-label">Connected apps</p>
+      <div id="profile-conn-list"></div>
+    </div>
+
+    <div class="card">
+      <p class="card-label">Achievements</p>
+      <div style="display:flex;flex-wrap:wrap;" id="achievements"></div>
+    </div>
+  </div>
+  <nav class="bnav">
+    <button class="bnav-btn" onclick="navTo('timerScreen',0)"><span class="bnav-icon">⏱</span>Timer</button>
+    <button class="bnav-btn" onclick="navTo('appsScreen',1)"><span class="bnav-icon">📱</span>My Apps</button>
+    <button class="bnav-btn" onclick="navTo('settingsScreen',2)"><span class="bnav-icon">⚙️</span>Settings</button>
+    <button class="bnav-btn active" onclick="navTo('profileScreen',3)"><span class="bnav-icon">👤</span>Profile</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════
+     LINK BOTTOM SHEET
+══════════════════════════════════ -->
+<div class="modal-bg" id="link-modal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-icon" id="link-ico">📸</div>
+    <div class="sheet-title" id="link-title">Connect Instagram</div>
+    <p class="sheet-sub" id="link-desc">Enter the email linked to your account.</p>
+    <div class="sh-field">
+      <label id="link-lbl">Instagram email</label>
+      <input type="email" id="link-input" placeholder="same as your login email" oninput="checkLinkEmail()">
+    </div>
+    <div class="match-ok" id="link-ok">✅ Email verified — matches your ScrollGuard account!</div>
+    <div class="match-no" id="link-no">⚠️ Different email detected — link anyway? It will still work.</div>
+    <div class="sheet-btns">
+      <button class="btn-sheet-cancel" onclick="closeLink()">Cancel</button>
+      <button class="btn-sheet-confirm" onclick="confirmLink()">Connect App</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     OVERLAY: HALFWAY
+══════════════════════════════════ -->
+<div class="overlay-modal" id="ov-half">
+  <div class="overlay-card">
+    <div class="sound-wave" id="sw-half"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
+    <span class="ov-icon">🧘</span>
+    <div class="ov-title">Halfway There</div>
+    <p class="ov-sub">You're at the midpoint of your session. Take a breath. You have <strong id="half-left"></strong> remaining.</p>
+    <div class="ov-pill">💡 Try putting your phone face-down</div>
+    <button class="btn-ov-primary" onclick="dismissHalf()">Keep Going →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     OVERLAY: 5-MIN WARNING
+══════════════════════════════════ -->
+<div class="overlay-modal" id="ov-warn">
+  <div class="overlay-card">
+    <div class="sound-wave yt-wave" id="sw-warn"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
+    <span class="ov-icon">⚠️</span>
+    <div class="ov-title">5 Minutes Left</div>
+    <p class="ov-sub">You're almost at your limit. Start wrapping up what you're watching.</p>
+    <div class="ov-pill" id="warn-platform-pill">📸 Instagram · 5 min left</div>
+    <button class="btn-ov-primary" onclick="dismissWarn()">Got It →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     OVERLAY: SESSION DONE
+══════════════════════════════════ -->
+<div class="overlay-modal" id="ov-done">
+  <div class="overlay-card">
+    <div class="sound-wave done-wave"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
+    <span class="ov-icon" id="done-icon">🎉</span>
+    <div class="ov-title" id="done-title">Session Complete!</div>
+    <p class="ov-sub" id="done-sub">You hit your scroll limit. Time to put the phone down and do something real.</p>
+    <div class="ov-pill" id="done-pill">🔥 1 session today</div>
+    <button class="btn-ov-primary" onclick="dismissDone()">I'll Stop Scrolling ✓</button>
+    <button class="btn-ov-ghost" onclick="extendFive()">5 More Minutes (Last Resort)</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════ PLATFORM CONFIG ═══════════════
+const PLATS = {
+  ig:{ name:'Instagram', icon:'📸', ringGrad:'url(#ig-ring-g)', cls:'ig' },
+  yt:{ name:'YouTube',   icon:'▶️', ringGrad:'url(#yt-ring-g)', cls:'yt' }
+};
+
+// ═══════════════ STATE ═══════════════
+const st = {
+  user: null,
+  linked: {},          // { ig: {email, username}, yt: {email, username} }
+  settings: { '5min':true, half:true, auto:false },
+  defaultDur: 30,
+  timer: {
+    running:false, paused:false,
+    dur:30*60, rem:30*60,
+    iv:null, sel:[], warnFired:false, halfFired:false
+  },
+  stats: { sessions:0, totMin:0, streak:0, best:0 },
+};
+
+let linkingPid = null;
+
+// circumference for r=85: 2π×85 = 534.07
+const CIRC = 2*Math.PI*85;
+document.getElementById('ring-prog').style.strokeDasharray = CIRC;
+
+// ═══════════════ AUTH ═══════════════
+const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+function authTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='login'&&i===0)||(tab==='signup'&&i===1)));
+  document.getElementById('loginForm').style.display = tab==='login'?'':'none';
+  document.getElementById('signupForm').style.display = tab==='signup'?'':'none';
+}
+
+function strengthCheck(v){
+  const p = Math.min(v.length/12*100,100);
+  const f = document.getElementById('strength-fill');
+  f.style.width = p+'%';
+  f.style.background = v.length<4?'#ef4444':v.length<8?'#f59e0b':'#1db954';
+}
+
+function showE(id, inputId){ const e=document.getElementById(id); e.classList.add('show'); document.getElementById(inputId).classList.add('err'); setTimeout(()=>{ e.classList.remove('show'); document.getElementById(inputId).classList.remove('err'); },2800); }
+
+function doLogin(){
+  const em = document.getElementById('li-email').value.trim();
+  const pw = document.getElementById('li-pass').value;
+  if(!validEmail(em)){ showE('li-email-err','li-email'); return; }
+  if(pw.length<6){ showE('li-pass-err','li-pass'); return; }
+  st.user = { email:em, name: capitalize(em.split('@')[0].replace(/[._\-\d]/g,' ').trim()) || 'User' };
+  startOnboard();
+}
+
+function doSignup(){
+  const nm = document.getElementById('su-name').value.trim();
+  const em = document.getElementById('su-email').value.trim();
+  const pw = document.getElementById('su-pass').value;
+  if(!nm){ showE('su-name-err','su-name'); return; }
+  if(!validEmail(em)){ showE('su-email-err','su-email'); return; }
+  if(pw.length<6){ showE('su-pass-err','su-pass'); return; }
+  st.user = { email:em, name: nm.split(' ')[0] };
+  startOnboard();
+}
+
+function capitalize(s){ return s.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
+
+function startOnboard(){
+  document.getElementById('ob1Email') && (document.getElementById('ob1Email').textContent = st.user.email);
+  showScreen('onboardScreen');
+}
+
+// ═══════════════ ONBOARDING ═══════════════
+function ob1Next(){
+  document.getElementById('ob-step1').style.display='none';
+  document.getElementById('ob-step2').style.display='';
+  setObStep(2);
+}
+function ob2Next(){
+  document.getElementById('ob-step2').style.display='none';
+  document.getElementById('ob-step3').style.display='';
+  setObStep(3);
+  const names = Object.keys(st.linked).map(p=>PLATS[p].name).join(' & ');
+  document.getElementById('ob3-platforms').textContent = names || 'your apps';
+}
+function goApp(){
+  populateApp();
+  showScreen('timerScreen');
+}
+function setObStep(n){
+  [1,2,3].forEach(i=>{
+    const el = document.getElementById('obs-'+i);
+    el.classList.remove('active','done');
+    if(i<n) el.classList.add('done');
+    if(i===n) el.classList.add('active');
+  });
+}
+
+// ═══════════════ LINK MODAL ═══════════════
+function openLink(pid){
+  if(!pid || !PLATS[pid]) return;
+  linkingPid = pid;
+  const p = PLATS[pid];
+  const ico = document.getElementById('link-ico');
+  ico.textContent = p.icon;
+  ico.className = 'sheet-icon '+p.cls;
+  document.getElementById('link-title').textContent = 'Connect '+p.name;
+  document.getElementById('link-lbl').textContent = p.name+' email address';
+  document.getElementById('link-desc').textContent =
+    `Enter the email you use for ${p.name}. Using the same email as your ScrollGuard account (${st.user?.email||'your email'}) enables instant verification.`;
+  document.getElementById('link-input').value = st.user?.email||'';
+  checkLinkEmail();
+  document.getElementById('link-modal').classList.add('show');
+}
+function closeLink(){ document.getElementById('link-modal').classList.remove('show'); linkingPid=null; }
+
+function checkLinkEmail(){
+  const v = document.getElementById('link-input').value.trim();
+  const ok = document.getElementById('link-ok');
+  const no = document.getElementById('link-no');
+  ok.classList.remove('show'); no.classList.remove('show');
+  if(!validEmail(v)) return;
+  const match = v.toLowerCase() === (st.user?.email||'').toLowerCase();
+  if(match) ok.classList.add('show'); else no.classList.add('show');
+}
+
+function confirmLink(){
+  const v = document.getElementById('link-input').value.trim();
+  if(!validEmail(v)){ document.getElementById('link-input').classList.add('err'); setTimeout(()=>document.getElementById('link-input').classList.remove('err'),2000); return; }
+  const pid = linkingPid;
+  st.linked[pid] = { email:v, username:'@'+v.split('@')[0] };
+  // update onboard tiles
+  const tile = document.getElementById('pt-'+pid);
+  if(tile){ tile.classList.add('linked'); document.getElementById('ts-'+pid).textContent='✓ Connected'; document.getElementById('ts-'+pid).classList.add('linked'); }
+  // enable continue
+  if(Object.keys(st.linked).length>=1) document.getElementById('ob1-next').disabled=false;
+  closeLink();
+  renderTrackPills();
+  renderConnList();
+  renderPerAppLimits();
+  renderProfileConn();
+  playBeep(660,.25);
+}
+
+function nextUnlinked(){ return Object.keys(PLATS).find(p=>!st.linked[p]) || 'ig'; }
+
+// ═══════════════ POPULATE APP ═══════════════
+function populateApp(){
+  const u = st.user;
+  const h = new Date().getHours();
+  const g = h<12?'Good morning':'afternoon'<17?'Good afternoon':'Good evening';
+  document.getElementById('greet-line').textContent = (h<12?'Good morning, ':h<17?'Good afternoon, ':'Good evening, ') + u.name;
+  document.getElementById('top-avatar').textContent = u.name[0].toUpperCase();
+  document.getElementById('apps-avatar').textContent = u.name[0].toUpperCase();
+  document.getElementById('set-avatar').textContent = u.name[0].toUpperCase();
+  document.getElementById('apps-email').textContent = u.email;
+  document.getElementById('set-email-disp').textContent = 'Signed in as '+u.email;
+  document.getElementById('profile-avatar').textContent = u.name[0].toUpperCase();
+  document.getElementById('profile-name').textContent = u.name;
+  document.getElementById('profile-email').textContent = u.email;
+  st.timer.dur = st.defaultDur*60;
+  st.timer.rem = st.timer.dur;
+  document.getElementById('dur-slider').value = st.defaultDur;
+  document.getElementById('dur-val').textContent = st.defaultDur+' min';
+  updateRing();
+  renderTrackPills();
+  renderConnList();
+  renderPerAppLimits();
+  renderProfileConn();
+  renderAchievements();
+  syncSettings();
+}
+
+// ═══════════════ RING ═══════════════
+function updateRing(){
+  const {rem, dur} = st.timer;
+  const pct = rem/dur;
+  const off = CIRC*(1-pct);
+  const rp = document.getElementById('ring-prog');
+  rp.style.strokeDashoffset = off;
+  // pick gradient based on selected
+  const sel = st.timer.sel;
+  const hasIg = sel.includes('ig'), hasYt = sel.includes('yt');
+  const grad = (!hasIg&&hasYt)?'url(#yt-ring-g)':(hasIg&&hasYt)?'url(#both-ring-g)':'url(#ig-ring-g)';
+  if(pct>.5) rp.setAttribute('stroke', grad);
+  else if(pct>.2) rp.setAttribute('stroke','#f59e0b');
+  else rp.setAttribute('stroke','#ef4444');
+  document.getElementById('ring-time').textContent = fmt(rem);
+}
+
+function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function setDur(v){ if(st.timer.running) return; st.timer.dur=v*60; st.timer.rem=v*60; document.getElementById('dur-val').textContent=v+' min'; updateRing(); }
+
+// ═══════════════ TRACK PILLS ═══════════════
+function renderTrackPills(){
+  const el = document.getElementById('track-pills');
+  if(!el) return; el.innerHTML='';
+  const linked = Object.keys(st.linked);
+  if(!linked.length){ el.innerHTML='<span style="font-size:12px;color:var(--muted);">No apps connected — go to My Apps</span>'; return; }
+  linked.forEach(pid=>{
+    const p=PLATS[pid], sel=st.timer.sel.includes(pid);
+    const d=document.createElement('div');
+    d.style.cssText=`display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:100px;cursor:pointer;font-size:13px;font-weight:600;border:1.5px solid;transition:all .2s;background:${sel?'var(--ink)':'transparent'};color:${sel?'var(--smoke)':'var(--text)'};border-color:${sel?'var(--ink)':'var(--smoke3)'};`;
+    d.innerHTML=`${p.icon} ${p.name}`;
+    d.onclick=()=>{ toggleSel(pid); };
+    el.appendChild(d);
+  });
+}
+
+function toggleSel(pid){ const a=st.timer.sel, i=a.indexOf(pid); if(i>-1) a.splice(i,1); else a.push(pid); renderTrackPills(); updateActivePills(); }
+function updateActivePills(){
+  const el=document.getElementById('active-pills'); el.innerHTML='';
+  st.timer.sel.forEach(pid=>{
+    const p=PLATS[pid],d=document.createElement('div');
+    d.style.cssText='display:inline-flex;align-items:center;gap:5px;background:var(--ink);color:var(--smoke);padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700;';
+    d.innerHTML=`<span style="width:5px;height:5px;border-radius:50%;background:#1db954;box-shadow:0 0 5px #1db954;display:inline-block;animation:liveBlink 1.4s ease infinite;"></span>${p.icon}${p.name}`;
+    el.appendChild(d);
+  });
+  const tk=document.getElementById('live-ticker');
+  if(st.timer.running && st.timer.sel.length){
+    tk.classList.add('show');
+    document.getElementById('live-txt').textContent=st.timer.sel.map(p=>PLATS[p].name).join('+');
+  } else tk.classList.remove('show');
+}
+
+// ═══════════════ TIMER ═══════════════
+function startTimer(){
+  const t=st.timer;
+  if(t.paused){ t.running=true; t.paused=false; document.getElementById('start-btn').textContent='▶ Running…'; document.getElementById('start-btn').disabled=true; t.iv=setInterval(tick,1000); updateActivePills(); return; }
+  if(!t.sel.length && Object.keys(st.linked).length){ t.sel=[...Object.keys(st.linked)]; renderTrackPills(); }
+  t.running=true; t.paused=false; t.warnFired=false; t.halfFired=false;
+  document.getElementById('start-btn').textContent='▶ Running…';
+  document.getElementById('start-btn').disabled=true;
+  document.getElementById('pause-btn').disabled=false;
+  document.getElementById('reset-btn').disabled=false;
+  document.getElementById('dur-slider').disabled=true;
+  document.getElementById('ring-sub').textContent='scrolling';
+  updateActivePills();
+  t.iv=setInterval(tick,1000);
+  playBeep(523,.15);
+}
+
+function tick(){
+  const t=st.timer;
+  if(t.rem<=0){ clearInterval(t.iv); sessionDone(); return; }
+  t.rem--;
+  updateRing();
+
+  // halfway
+  if(st.settings.half && !t.halfFired && t.rem===Math.floor(t.dur/2)){
+    t.halfFired=true;
+    triggerHalf();
+  }
+  // 5-min warning
+  if(st.settings['5min'] && !t.warnFired && t.rem===5*60){
+    t.warnFired=true;
+    triggerWarn();
+  }
+  if(t.rem<=60) document.getElementById('ringWrap').classList.add('urgent');
+}
+
+function pauseTimer(){
+  const t=st.timer; clearInterval(t.iv); t.running=false; t.paused=true;
+  document.getElementById('start-btn').textContent='▶ Resume'; document.getElementById('start-btn').disabled=false;
+  document.getElementById('pause-btn').disabled=true;
+  document.getElementById('ring-sub').textContent='paused';
+  document.getElementById('live-ticker').classList.remove('show');
+}
+
+function resetTimer(){
+  const t=st.timer; clearInterval(t.iv);
+  const spent=Math.floor((t.dur-t.rem)/60);
+  if(spent>0) addLog('interrupted',spent,t.sel);
+  t.rem=t.dur; t.running=false; t.paused=false; t.warnFired=false; t.halfFired=false;
+  resetUI(); updateRing();
+}
+
+function sessionDone(){
+  const t=st.timer; const mins=Math.floor(t.dur/60);
+  st.stats.sessions++; st.stats.streak++;
+  st.stats.totMin+=mins;
+  if(st.stats.streak>st.stats.best) st.stats.best=st.stats.streak;
+  updateStats();
+  addLog('complete',mins,t.sel);
+  triggerDone();
+  resetUI();
+  renderAchievements();
+  if(st.settings.auto) setTimeout(()=>{ st.timer.rem=st.timer.dur; st.timer.warnFired=false; st.timer.halfFired=false; updateRing(); startTimer(); },2500);
+}
+
+function resetUI(){
+  document.getElementById('start-btn').textContent='▶ Start Session'; document.getElementById('start-btn').disabled=false;
+  document.getElementById('pause-btn').disabled=true; document.getElementById('reset-btn').disabled=true;
+  document.getElementById('dur-slider').disabled=false;
+  document.getElementById('ring-sub').textContent='ready';
+  document.getElementById('ringWrap').classList.remove('urgent');
+  document.getElementById('active-pills').innerHTML='';
+  document.getElementById('live-ticker').classList.remove('show');
+  st.timer.running=false; st.timer.paused=false;
+}
+
+// ═══════════════ ALERTS ═══════════════
+function triggerHalf(){
+  playBeep(523,.35);
+  setTimeout(()=>playBeep(659,.25),400);
+  document.getElementById('half-left').textContent=fmt(st.timer.rem);
+  const sw=document.getElementById('sw-half');
+  const hasYt=st.timer.sel.includes('yt');
+  sw.className='sound-wave'+(hasYt?' yt-wave':'');
+  document.getElementById('ov-half').classList.add('show');
+}
+
+function triggerWarn(){
+  playBeep(880,.2);
+  setTimeout(()=>playBeep(880,.2),300);
+  setTimeout(()=>playBeep(1047,.3),600);
+  const names=st.timer.sel.map(p=>PLATS[p].icon+' '+PLATS[p].name).join(' & ')||'Session';
+  document.getElementById('warn-platform-pill').textContent=names+' · 5 min left';
+  document.getElementById('ov-warn').classList.add('show');
+}
+
+function triggerDone(){
+  // 3-tone done chime
+  playBeep(523,.2);
+  setTimeout(()=>playBeep(659,.2),250);
+  setTimeout(()=>playBeep(784,.4),500);
+  const icons=['🎉','🏆','🔥','⭐','💫'];
+  const subs=[
+    'You hit your scroll limit. Put the phone down.',
+    'Social media will still be there. Your focus won\'t.',
+    'Great discipline — go touch some grass.',
+    'Screen time complete. Time for the real world.',
+    'You earned a break from your break.'
+  ];
+  const n=st.stats.sessions;
+  document.getElementById('done-icon').textContent=icons[Math.min(n-1,icons.length-1)];
+  document.getElementById('done-title').textContent=n===1?"Time's Up!":'Another One Done!';
+  document.getElementById('done-sub').textContent=subs[Math.min(n-1,subs.length-1)];
+  document.getElementById('done-pill').textContent=`🔥 ${n} session${n>1?'s':''} completed today`;
+  document.getElementById('ov-done').classList.add('show');
+}
+
+function dismissHalf(){ document.getElementById('ov-half').classList.remove('show'); }
+function dismissWarn(){ document.getElementById('ov-warn').classList.remove('show'); }
+function dismissDone(){ document.getElementById('ov-done').classList.remove('show'); }
+
+function extendFive(){
+  dismissDone();
+  const t=st.timer;
+  t.rem=5*60; t.dur=5*60; t.warnFired=false; t.halfFired=false;
+  updateRing();
+  document.getElementById('ring-sub').textContent='extension';
+  startTimer();
+}
+
+// ═══════════════ SOUND ═══════════════
+function playBeep(freq,dur){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=freq; o.type='sine';
+    g.gain.setValueAtTime(.25,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+
+// ═══════════════ STATS ═══════════════
+function updateStats(){
+  const s=st.stats;
+  const fmt2=m=>m<60?m+'m':(Math.floor(m/60)+'h'+(m%60?m%60+'m':''));
+  ['s-sess','s-time','s-streak'].forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.textContent=i===0?s.sessions:i===1?fmt2(s.totMin):'🔥'+s.streak; });
+  ['p-sess','p-time','p-best'].forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.textContent=i===0?s.sessions:i===1?fmt2(s.totMin):'🔥'+s.best; });
+}
+
+function addLog(type,mins,plats){
+  const empty=document.getElementById('log-empty'); if(empty) empty.remove();
+  const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const names=plats.map(p=>PLATS[p]?.name).filter(Boolean).join(', ')||'General';
+  const colors={complete:'#1db954',interrupted:'#f59e0b',overtime:'#ef4444'};
+  const labels={complete:'Completed',interrupted:'Reset'};
+  const el=document.createElement('div'); el.className='log-entry';
+  el.innerHTML=`<div class="log-pip" style="background:${colors[type]||'#888'};box-shadow:0 0 5px ${colors[type]||'#888'};"></div><span class="log-body">${labels[type]||type} · ${names} · ${mins}m</span><span class="log-time">${t}</span>`;
+  document.getElementById('log-list').prepend(el);
+}
+
+function clearLog(){
+  document.getElementById('log-list').innerHTML='<p style="font-size:13px;color:var(--muted2);text-align:center;padding:.75rem 0;" id="log-empty">No sessions yet — start your first one!</p>';
+  st.stats={sessions:0,totMin:0,streak:0,best:0}; updateStats(); renderAchievements();
+}
+
+// ═══════════════ CONNECTED LIST ═══════════════
+function renderConnList(){
+  const el=document.getElementById('conn-list'); if(!el) return; el.innerHTML='';
+  Object.entries(st.linked).forEach(([pid,data])=>{
+    const p=PLATS[pid];
+    const row=document.createElement('div'); row.className='conn-row';
+    row.innerHTML=`
+      <div class="conn-ico ${p.cls}">${p.icon}</div>
+      <div class="conn-detail"><div class="conn-name">${p.name}</div><div class="conn-email">${data.username} · ${data.email}</div></div>
+      <span class="badge-on">Active</span>
+      <button onclick="unlink('${pid}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:0 4px;line-height:1;">×</button>`;
+    el.appendChild(row);
+  });
+  if(!Object.keys(st.linked).length) el.innerHTML='<p style="font-size:13px;color:var(--muted);padding:.4rem 0;">No platforms linked yet.</p>';
+}
+
+function unlink(pid){
+  delete st.linked[pid];
+  const i=st.timer.sel.indexOf(pid); if(i>-1) st.timer.sel.splice(i,1);
+  const tile=document.getElementById('pt-'+pid);
+  if(tile){ tile.classList.remove('linked'); const ts=document.getElementById('ts-'+pid); ts.textContent='Tap to connect'; ts.classList.remove('linked'); }
+  if(!Object.keys(st.linked).length) document.getElementById('ob1-next').disabled=true;
+  renderConnList(); renderTrackPills(); renderPerAppLimits(); renderProfileConn();
+}
+
+function renderPerAppLimits(){
+  const el=document.getElementById('per-app-limits'); if(!el) return; el.innerHTML='';
+  if(!Object.keys(st.linked).length){ el.innerHTML='<p style="font-size:13px;color:var(--muted);">Connect platforms to set individual limits.</p>'; return; }
+  Object.entries(st.linked).forEach(([pid])=>{
+    const p=PLATS[pid];
+    if(!st.linked[pid].limit) st.linked[pid].limit=st.defaultDur;
+    const row=document.createElement('div'); row.className='app-limit-row';
+    row.innerHTML=`
+      <span class="app-lim-ico">${p.icon}</span>
+      <span class="app-lim-name">${p.name}</span>
+      <input type="range" min="5" max="120" step="5" value="${st.linked[pid].limit}" style="flex:1;" oninput="st.linked['${pid}'].limit=+this.value;this.nextElementSibling.textContent=this.value+' min';">
+      <span class="app-lim-val">${st.linked[pid].limit} min</span>`;
+    el.appendChild(row);
+  });
+}
+
+function renderProfileConn(){
+  const el=document.getElementById('profile-conn-list'); if(!el) return; el.innerHTML='';
+  Object.entries(st.linked).forEach(([pid,data])=>{
+    const p=PLATS[pid];
+    const row=document.createElement('div'); row.className='conn-row';
+    row.innerHTML=`<div class="conn-ico ${p.cls}">${p.icon}</div><div class="conn-detail"><div class="conn-name">${p.name}</div><div class="conn-email">${data.email}</div></div><span class="badge-on">Linked</span>`;
+    el.appendChild(row);
+  });
+  if(!Object.keys(st.linked).length) el.innerHTML='<p style="font-size:13px;color:var(--muted);">No platforms linked.</p>';
+}
+
+function renderAchievements(){
+  const el=document.getElementById('achievements'); if(!el) return;
+  const s=st.stats;
+  const all=[
+    {icon:'🌱',l:'First Session',u:s.sessions>=1},
+    {icon:'🔥',l:'3-Day Streak',u:s.streak>=3},
+    {icon:'📸',l:'IG Warrior',u:st.linked.ig&&s.sessions>=2},
+    {icon:'▶️',l:'YT Guardian',u:st.linked.yt&&s.sessions>=2},
+    {icon:'⚡',l:'5 Sessions',u:s.sessions>=5},
+    {icon:'🏆',l:'1hr Reclaimed',u:s.totMin>=60},
+    {icon:'🧘',l:'Mindful Week',u:s.streak>=7},
+    {icon:'💎',l:'10 Sessions',u:s.sessions>=10},
+  ];
+  el.innerHTML='';
+  all.forEach(a=>{
+    const d=document.createElement('div');
+    d.className='achievement '+(a.u?'ach-unlocked':'ach-locked');
+    d.textContent=a.icon+' '+a.l;
+    el.appendChild(d);
+  });
+}
+
+// ═══════════════ SETTINGS ═══════════════
+function toggleS(k){ st.settings[k]=!st.settings[k]; document.getElementById('tgl-'+k)?.classList.toggle('on',st.settings[k]); }
+function toggleS2(k){ st.settings[k]=!st.settings[k]; document.getElementById('s-tgl-'+k)?.classList.toggle('on',st.settings[k]); if(document.getElementById('tgl-'+k)) document.getElementById('tgl-'+k).classList.toggle('on',st.settings[k]); }
+function syncSettings(){ Object.keys(st.settings).forEach(k=>{ document.getElementById('s-tgl-'+k)?.classList.toggle('on',st.settings[k]); }); }
+
+// ═══════════════ NAV ═══════════════
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+function navTo(screenId, idx){
+  showScreen(screenId);
+  document.querySelectorAll('.bnav').forEach(nav=>{
+    nav.querySelectorAll('.bnav-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  });
+}
+
+function doLogout(){
+  if(st.timer.iv) clearInterval(st.timer.iv);
+  Object.assign(st,{user:null,linked:{},settings:{'5min':true,half:true,auto:false},defaultDur:30,timer:{running:false,paused:false,dur:30*60,rem:30*60,iv:null,sel:[],warnFired:false,halfFired:false},stats:{sessions:0,totMin:0,streak:0,best:0}});
+  // reset onboard tiles
+  ['ig','yt'].forEach(pid=>{ const t=document.getElementById('pt-'+pid); if(t){ t.classList.remove('linked'); document.getElementById('ts-'+pid).textContent='Tap to connect'; document.getElementById('ts-'+pid).classList.remove('linked'); }});
+  document.getElementById('ob1-next').disabled=true;
+  document.getElementById('ob-step1').style.display='';
+  document.getElementById('ob-step2').style.display='none';
+  document.getElementById('ob-step3').style.display='none';
+  setObStep(1);
+  document.getElementById('li-email').value=''; document.getElementById('li-pass').value='';
+  authTab('login');
+  showScreen('authScreen');
+}
+</script>
+</body>
+</html>
